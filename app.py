@@ -1,8 +1,8 @@
-import os
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 from databricks import sql
+import os
 
 # Load ZIP coordinate lookup from uscities Excel file
 zip_lookup_raw = pd.read_excel("uscities.xlsx")
@@ -26,12 +26,11 @@ connection = sql.connect(
     auth_type="access_token"
 )
 
-
 # SQL query
 query = """
 SELECT DISTINCT
     receipt_id,
-    completed_at, 
+    completed_at,
     store,
     customer_zipcode,
     total_collected_post_discount_post_tax_post_fees
@@ -89,4 +88,4 @@ fig.update_layout(
     dragmode="zoom"
 )
 
-st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
+st.plotly_chart(fig)
