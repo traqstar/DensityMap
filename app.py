@@ -78,14 +78,16 @@ fig = px.density_mapbox(
     color_continuous_scale=color_scale.lower(),  # Plotly expects lowercase
     title=f"Customer Purchase Density for {selected_store}"
 )
+
 fig.update_layout(
     mapbox=dict(
         uirevision=True,
-        zoom=6,
-        scrollZoom=True
+        zoom=6
     ),
+    mapbox_scrollZoom=True,
     dragmode="zoom"
 )
+
 
 
 
