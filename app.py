@@ -85,7 +85,4 @@ fig = px.scatter_mapbox(
     title=f"Customer Purchase Density for {selected_store}"
 )
 
-# Enable scroll zoom
-fig.update_layout(mapbox=dict(scrollZoom=True))
-
 st.plotly_chart(fig)
