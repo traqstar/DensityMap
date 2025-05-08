@@ -83,9 +83,16 @@ fig = px.scatter_mapbox(
     mapbox_style="open-street-map",
     color_continuous_scale=color_scale.lower(),
     title=f"Customer Purchase Density for {selected_store}",
-    dragmode="zoom",
 )
 
+# Update the layout with dragmode
+fig.update_layout(
+    dragmode="zoom",
+    mapbox=dict(
+        bearing=0,
+        pitch=0
+    )
+)
 
-
-st.plotly_chart(fig)
+# Display in Streamlit with config options including scrollZoom
+st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
