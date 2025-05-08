@@ -79,16 +79,7 @@ fig = px.density_mapbox(
     title=f"Customer Purchase Density for {selected_store}"
 )
 
-fig.update_layout(
-    mapbox=dict(
-        uirevision=True,
-        zoom=6
-    ),
-    mapbox_scrollZoom=True,
-    dragmode="zoom"
-)
-
-
-
+fig.update_layout(mapbox=dict(uirevision=True, zoom=6), dragmode="zoom")
+fig.update_layout(mapbox_scrollZoom=True)
 
 st.plotly_chart(fig)
