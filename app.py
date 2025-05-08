@@ -83,7 +83,7 @@ fig.update_layout(
         uirevision=True,   # prevent map from resetting on re-renders
         zoom=6
     ),
-    mapbox_scrollZoom=True,
+    scrollZoom=True,
     dragmode="zoom"
 )
 
