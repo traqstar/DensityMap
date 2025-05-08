@@ -63,6 +63,8 @@ st.title("Customer Purchase Density Map (Last 7 Days)")
 selected_store = st.selectbox("Choose a Store", sorted(df['store'].dropna().unique()))
 color_scale = st.selectbox("Choose a color scale", ["Jet", "Viridis", "Plasma", "Cividis", "Hot"])
 
+filtered_df = df[df['store'] == selected_store].dropna(subset=["lat", "lng"])
+
 # Plot using OpenStreetMap style and user-selected color scale
 fig = px.density_mapbox(
     filtered_df,
@@ -77,15 +79,14 @@ fig = px.density_mapbox(
     title=f"Customer Purchase Density for {selected_store}"
 )
 
-# ✅ Enable scroll-to-zoom and retain zoom state
+# Enable scroll-wheel zoom and stable state
 fig.update_layout(
     mapbox=dict(
-        uirevision=True,   # prevent map from resetting on re-renders
+        uirevision=True,
         zoom=6
     ),
     scrollZoom=True,
     dragmode="zoom"
 )
 
-# Display the map
 st.plotly_chart(fig)
