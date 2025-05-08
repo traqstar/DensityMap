@@ -89,4 +89,4 @@ fig.update_layout(
     dragmode="zoom"
 )
 
-st.plotly_chart(fig)
+st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
