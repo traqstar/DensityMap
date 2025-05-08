@@ -20,10 +20,12 @@ zip_lookup["zipcode"] = zip_lookup["zipcode"].astype(str).str.zfill(5)
 
 # Databricks SQL connection config
 connection = sql.connect(
-    server_hostname = "adb-2583620669710215.15.azuredatabricks.net",
-    http_path = "/sql/1.0/warehouses/148435e03690fbe3",
-    access_token = os.getenv("DATABRICKS_TOKEN")
+    server_hostname="adb-2583620669710215.15.azuredatabricks.net",
+    http_path="/sql/1.0/warehouses/148435e03690fbe3",
+    access_token=os.getenv("DATABRICKS_TOKEN"),
+    auth_type="access_token"
 )
+
 
 # SQL query
 query = """
@@ -76,4 +78,15 @@ fig = px.density_mapbox(
     color_continuous_scale=color_scale.lower(),  # Plotly expects lowercase
     title=f"Customer Purchase Density for {selected_store}"
 )
+fig.update_layout(
+    mapbox=dict(
+        uirevision=True,
+        zoom=6,
+        scrollZoom=True
+    ),
+    dragmode="zoom"
+)
+
+
+
 st.plotly_chart(fig)
