@@ -67,13 +67,13 @@ color_scale = st.selectbox("Choose a color scale", ["Jet", "Viridis", "Plasma", 
 
 filtered_df = df[df['store'] == selected_store].dropna(subset=["lat", "lng"])
 
-# Plot using updated scatter_map (recommended)
-fig = px.scatter_map(
+# Plot using scatter_mapbox instead of scatter_map
+fig = px.scatter_mapbox(
     filtered_df,
     lat="lat",
     lon="lng",
-    size=filtered_df["total_collected_post_discount_post_tax_post_fees"].astype(float).to_numpy(),
-    color=filtered_df["total_collected_post_discount_post_tax_post_fees"].astype(float).to_numpy(),
+    size=filtered_df["total_collected_post_discount_post_tax_post_fees"].astype(float),
+    color=filtered_df["total_collected_post_discount_post_tax_post_fees"].astype(float),
     size_max=30,
     zoom=6,
     center={"lat": filtered_df["lat"].mean(), "lon": filtered_df["lng"].mean()},
@@ -83,6 +83,6 @@ fig = px.scatter_map(
 )
 
 # Enable scroll zoom
-fig.update_layout(mapbox={"uirevision": True, "zoom": 6}, dragmode="zoom")
+fig.update_layout(mapbox=dict(scrollZoom=True))
 
 st.plotly_chart(fig)
