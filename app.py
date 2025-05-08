@@ -3,6 +3,7 @@ import plotly.express as px
 import streamlit as st
 from databricks import sql
 import os
+import numpy as np
 
 # Load ZIP coordinate lookup from uscities Excel file
 zip_lookup_raw = pd.read_excel("uscities.xlsx")
@@ -22,8 +23,7 @@ zip_lookup["zipcode"] = zip_lookup["zipcode"].astype(str).str.zfill(5)
 connection = sql.connect(
     server_hostname="adb-2583620669710215.15.azuredatabricks.net",
     http_path="/sql/1.0/warehouses/148435e03690fbe3",
-    access_token=os.getenv("DATABRICKS_TOKEN"),
-    auth_type="access_token"
+    access_token=os.getenv("DATABRICKS_TOKEN")
 )
 
 # SQL query
@@ -49,6 +49,9 @@ connection.close()
 df = pd.DataFrame(rows, columns=columns)
 df['completed_at'] = pd.to_datetime(df['completed_at'])
 df['customer_zipcode'] = df['customer_zipcode'].astype(str).str.zfill(5)
+df["total_collected_post_discount_post_tax_post_fees"] = pd.to_numeric(
+    df["total_collected_post_discount_post_tax_post_fees"], errors="coerce"
+)
 
 # Join ZIPs to coordinates
 df = df.merge(zip_lookup, left_on="customer_zipcode", right_on="zipcode", how="left")
@@ -64,17 +67,22 @@ color_scale = st.selectbox("Choose a color scale", ["Jet", "Viridis", "Plasma", 
 
 filtered_df = df[df['store'] == selected_store].dropna(subset=["lat", "lng"])
 
-# Plot using OpenStreetMap style and user-selected color scale
-fig = px.scatter_mapbox(
+# Plot using updated scatter_map (recommended)
+fig = px.scatter_map(
     filtered_df,
     lat="lat",
     lon="lng",
-    size="total_collected_post_discount_post_tax_post_fees",
-    color="total_collected_post_discount_post_tax_post_fees",
-    color_continuous_scale=color_scale.lower(),
+    size=filtered_df["total_collected_post_discount_post_tax_post_fees"].astype(float).to_numpy(),
+    color=filtered_df["total_collected_post_discount_post_tax_post_fees"].astype(float).to_numpy(),
+    size_max=30,
     zoom=6,
-    mapbox_style="open-street-map"
+    center={"lat": filtered_df["lat"].mean(), "lon": filtered_df["lng"].mean()},
+    mapbox_style="open-street-map",
+    color_continuous_scale=color_scale.lower(),
+    title=f"Customer Purchase Density for {selected_store}"
 )
-fig.update_layout(margin={"r":0,"t":30,"l":0,"b":0}, dragmode="zoom")
+
+# Enable scroll zoom
+fig.update_layout(mapbox={"uirevision": True, "zoom": 6}, dragmode="zoom")
 
 st.plotly_chart(fig)
