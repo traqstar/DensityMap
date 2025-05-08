@@ -82,15 +82,10 @@ fig = px.scatter_mapbox(
     center={"lat": filtered_df["lat"].mean(), "lon": filtered_df["lng"].mean()},
     mapbox_style="open-street-map",
     color_continuous_scale=color_scale.lower(),
-    title=f"Customer Purchase Density for {selected_store}"
+    title=f"Customer Purchase Density for {selected_store}",
+    scrollzoom=True,
 )
 
-fig.update_layout(
-    mapbox=dict(
-        center={"lat": filtered_df["lat"].mean(), "lon": filtered_df["lng"].mean()},
-        zoom=6
-    ),
-    scrollZoom=True  # this is the right place!
-)
+
 
 st.plotly_chart(fig)
