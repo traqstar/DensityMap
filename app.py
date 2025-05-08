@@ -26,6 +26,10 @@ connection = sql.connect(
     access_token=os.getenv("DATABRICKS_TOKEN")
 )
 
+import pandas as pd
+import streamlit as st
+import plotly.express as px
+
 # SQL query
 query = """
 SELECT DISTINCT
@@ -53,12 +57,34 @@ df["total_collected_post_discount_post_tax_post_fees"] = pd.to_numeric(
     df["total_collected_post_discount_post_tax_post_fees"], errors="coerce"
 )
 
-# Join ZIPs to coordinates
-df = df.merge(zip_lookup, left_on="customer_zipcode", right_on="zipcode", how="left")
+# Process zip_lookup to create a proper lookup dictionary
+# Create a consistent format for the lookup table with zipcode, lat, lng
+processed_zip_lookup = pd.DataFrame(columns=['zipcode', 'lat', 'lng'])
 
-# Leave lat/lng blank if ZIP code is blank or missing
-df['lat'] = df.apply(lambda row: row['lat'] if pd.notna(row['customer_zipcode']) and row['customer_zipcode'].strip() != "" else None, axis=1)
-df['lng'] = df.apply(lambda row: row['lng'] if pd.notna(row['customer_zipcode']) and row['customer_zipcode'].strip() != "" else None, axis=1)
+# Assuming zip_lookup is wide format with zips1, zips2, ..., zips308 columns
+# and corresponding lat and lng columns
+zip_columns = [col for col in zip_lookup.columns if col.startswith('zips')]
+for zip_col in zip_columns:
+    # Get index number from column name (e.g., 'zips1' -> '1')
+    col_index = zip_col[4:]
+    
+    # Check if corresponding lat/lng columns exist
+    lat_col = f'lat{col_index}' if f'lat{col_index}' in zip_lookup.columns else 'lat'
+    lng_col = f'lng{col_index}' if f'lng{col_index}' in zip_lookup.columns else 'lng'
+    
+    # Extract valid zipcodes with their coordinates
+    valid_zips = zip_lookup[[zip_col, lat_col, lng_col]].dropna(subset=[zip_col])
+    valid_zips = valid_zips.rename(columns={zip_col: 'zipcode', lat_col: 'lat', lng_col: 'lng'})
+    
+    # Append to our processed lookup
+    processed_zip_lookup = pd.concat([processed_zip_lookup, valid_zips], ignore_index=True)
+
+# Clean up the processed lookup
+processed_zip_lookup['zipcode'] = processed_zip_lookup['zipcode'].astype(str).str.zfill(5)
+processed_zip_lookup = processed_zip_lookup.drop_duplicates(subset=['zipcode'])
+
+# Merge with main dataframe
+df = df.merge(processed_zip_lookup, left_on="customer_zipcode", right_on="zipcode", how="left")
 
 # Streamlit UI
 st.title("Customer Purchase Density Map (Last 7 Days)")
@@ -67,21 +93,19 @@ color_scale = st.selectbox("Choose a color scale", ["Jet", "Viridis", "Plasma", 
 
 filtered_df = df[df['store'] == selected_store].dropna(subset=["lat", "lng"])
 
-# Ensure size values are non-negative
-filtered_df = filtered_df[filtered_df["total_collected_post_discount_post_tax_post_fees"] > 0]
-
-# Plot using scatter_mapbox (deprecated but necessary for mapbox features)
+# Create the density mapbox figure
 fig = px.density_mapbox(
     filtered_df,
     lat="lat",
     lon="lng",
-    z="total_collected_post_discount_post_tax_post_fees",  # z instead of size for density
-    radius=10,  # Controls the radius of influence of each data point
+    z="total_collected_post_discount_post_tax_post_fees",
+    radius=10,
     zoom=6,
-    center={"lat": filtered_df["lat"].mean(), "lon": filtered_df["lng"].mean()},
+    center={"lat": filtered_df["lat"].mean() if not filtered_df.empty else 39.8283, 
+            "lon": filtered_df["lng"].mean() if not filtered_df.empty else -98.5795},  # US center if empty
     mapbox_style="open-street-map",
     color_continuous_scale=color_scale.lower(),
-    opacity=0.7,  # Control the opacity of the density heatmap
+    opacity=0.7,
     title=f"Customer Purchase Density for {selected_store}",
 )
 
@@ -96,3 +120,19 @@ fig.update_layout(
 
 # Display in Streamlit with config options including scrollZoom
 st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
+
+# Add some statistics
+st.subheader("Purchase Statistics")
+if not filtered_df.empty:
+    total_purchases = len(filtered_df)
+    total_revenue = filtered_df["total_collected_post_discount_post_tax_post_fees"].sum()
+    avg_purchase = filtered_df["total_collected_post_discount_post_tax_post_fees"].mean()
+    mapped_percentage = (len(filtered_df) / len(df[df['store'] == selected_store])) * 100
+    
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Total Purchases", f"{total_purchases:,}")
+    col2.metric("Total Revenue", f"${total_revenue:,.2f}")
+    col3.metric("Average Purchase", f"${avg_purchase:,.2f}")
+    col4.metric("Mapped Purchases", f"{mapped_percentage:.1f}%")
+else:
+    st.warning("No data available for the selected store or all zip codes are unmapped.")
