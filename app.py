@@ -67,13 +67,16 @@ color_scale = st.selectbox("Choose a color scale", ["Jet", "Viridis", "Plasma", 
 
 filtered_df = df[df['store'] == selected_store].dropna(subset=["lat", "lng"])
 
-# Plot using scatter_mapbox instead of scatter_map
+# Ensure size values are non-negative
+filtered_df = filtered_df[filtered_df["total_collected_post_discount_post_tax_post_fees"] > 0]
+
+# Plot using scatter_mapbox (deprecated but necessary for mapbox features)
 fig = px.scatter_mapbox(
     filtered_df,
     lat="lat",
     lon="lng",
-    size=filtered_df["total_collected_post_discount_post_tax_post_fees"].astype(float),
-    color=filtered_df["total_collected_post_discount_post_tax_post_fees"].astype(float),
+    size="total_collected_post_discount_post_tax_post_fees",
+    color="total_collected_post_discount_post_tax_post_fees",
     size_max=30,
     zoom=6,
     center={"lat": filtered_df["lat"].mean(), "lon": filtered_df["lng"].mean()},
