@@ -83,7 +83,7 @@ fig = px.scatter_mapbox(
     mapbox_style="open-street-map",
     color_continuous_scale=color_scale.lower(),
     title=f"Customer Purchase Density for {selected_store}",
-    scrollzoom=True,
+    dragmode="zoom",
 )
 
 
