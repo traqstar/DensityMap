@@ -71,17 +71,17 @@ filtered_df = df[df['store'] == selected_store].dropna(subset=["lat", "lng"])
 filtered_df = filtered_df[filtered_df["total_collected_post_discount_post_tax_post_fees"] > 0]
 
 # Plot using scatter_mapbox (deprecated but necessary for mapbox features)
-fig = px.scatter_mapbox(
+fig = px.density_mapbox(
     filtered_df,
     lat="lat",
     lon="lng",
-    size="total_collected_post_discount_post_tax_post_fees",
-    color="total_collected_post_discount_post_tax_post_fees",
-    size_max=30,
+    z="total_collected_post_discount_post_tax_post_fees",  # z instead of size for density
+    radius=10,  # Controls the radius of influence of each data point
     zoom=6,
     center={"lat": filtered_df["lat"].mean(), "lon": filtered_df["lng"].mean()},
     mapbox_style="open-street-map",
     color_continuous_scale=color_scale.lower(),
+    opacity=0.7,  # Control the opacity of the density heatmap
     title=f"Customer Purchase Density for {selected_store}",
 )
 
