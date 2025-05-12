@@ -1,10 +1,26 @@
+import sys
+import subprocess
 
-import pandas as pd
-import plotly.express as px
+
+# Try importing with error handling
+try:
+    import pandas as pd
+    st.write("pandas version:", pd.__version__)
+except ImportError as e:
+    st.error(f"Failed to import pandas: {e}")
+
+try:
+    import plotly.express as px
+    st.write("plotly version:", px.__version__)
+except ImportError as e:
+    st.error(f"Failed to import plotly.express: {e}")
+
+# Continue with other imports
 import streamlit as st
 from databricks import sql
 import os
-import zipcodes  # You'll need to install this package
+import numpy as np
+import zipcodes
 
 # Databricks SQL connection config
 connection = sql.connect(
@@ -43,7 +59,7 @@ df["total_collected_post_discount_post_tax_post_fees"] = pd.to_numeric(
 # Function to validate ZIP code and get coordinates
 def get_zip_coords(zip_code):
     try:
-        if zip_code.isdigit() and len(zip_code) == 5:  # Check if ZIP code is valid
+        if zip_code and zip_code.isdigit() and len(zip_code) == 5:
             zip_info = zipcodes.matching(zip_code)
             if zip_info:
                 return float(zip_info[0]['lat']), float(zip_info[0]['long'])
@@ -52,13 +68,16 @@ def get_zip_coords(zip_code):
         print(f"Error fetching coordinates for ZIP {zip_code}: {e}")
         return None, None
 
+# Drop rows with null or invalid ZIP codes
+df = df[df['customer_zipcode'].notnull() & df['customer_zipcode'].str.isdigit() & (df['customer_zipcode'].str.len() == 5)]
+
 # Apply the function to get coordinates
 df[['lat', 'lng']] = df.apply(
     lambda row: pd.Series(get_zip_coords(row['customer_zipcode'])), 
     axis=1
 )
 
-# Filter out rows with null coordinates
+# Drop rows with null coordinates
 df = df.dropna(subset=["lat", "lng"])
 
 # Streamlit UI
@@ -71,8 +90,8 @@ filtered_df = df[df['store'] == selected_store]
 
 # Check if there is data to plot
 if not filtered_df.empty:
-    # Create the density map figure
-    fig = px.density_map(
+    # Create the density mapbox figure (corrected from density_map to density_mapbox)
+    fig = px.density_mapbox(
         filtered_df,
         lat="lat",
         lon="lng",
@@ -103,7 +122,10 @@ if not filtered_df.empty:
     total_purchases = len(filtered_df)
     total_revenue = filtered_df["total_collected_post_discount_post_tax_post_fees"].sum()
     avg_purchase = filtered_df["total_collected_post_discount_post_tax_post_fees"].mean()
-    mapped_percentage = (len(filtered_df) / len(df[df['store'] == selected_store])) * 100
+    
+    # Calculate mapped percentage safely
+    store_total = len(df[df['store'] == selected_store])
+    mapped_percentage = (len(filtered_df) / store_total * 100) if store_total > 0 else 0
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Total Purchases", f"{total_purchases:,}")
