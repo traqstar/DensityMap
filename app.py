@@ -62,8 +62,8 @@ color_scale = st.selectbox("Choose a color scale", ["Jet", "Viridis", "Plasma", 
 
 filtered_df = df[df['store'] == selected_store].dropna(subset=["lat", "lng"])
 
-# Create the density mapbox figure
-fig = px.density_mapbox(
+# Create the density map figure
+fig = px.density_map(
     filtered_df,
     lat="lat",
     lon="lng",
