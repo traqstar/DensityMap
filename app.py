@@ -1,21 +1,6 @@
 import streamlit as st  # Move this to the top
-import sys
-import subprocess
-
-# Try importing with error handling
-try:
-    import pandas as pd
-    st.write("pandas version:", pd.__version__)
-except ImportError as e:
-    st.error(f"Failed to import pandas: {e}")
-
-try:
-    import plotly.express as px
-    st.write("plotly version:", px.__version__)
-except ImportError as e:
-    st.error(f"Failed to import plotly.express: {e}")
-
-# Continue with other imports
+import pandas as pd
+import plotly.express as px
 from databricks import sql
 import os
 import numpy as np
