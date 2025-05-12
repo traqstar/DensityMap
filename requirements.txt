@@ -3,3 +3,5 @@ pandas
 plotly
 openpyxl
 databricks-sql-connector
+zipcodes
+numpy
