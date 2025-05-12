@@ -4,6 +4,8 @@ import plotly.express as px
 from databricks import sql
 import os
 import numpy as np
+import sys
+print("Python executable:", sys.executable)
 import zipcodes
 
 # Databricks SQL connection config
