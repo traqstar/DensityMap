@@ -1,3 +1,5 @@
+import sys
+print("Python executable:", sys.executable)
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -39,14 +41,16 @@ df["total_collected_post_discount_post_tax_post_fees"] = pd.to_numeric(
     df["total_collected_post_discount_post_tax_post_fees"], errors="coerce"
 )
 
-# Get coordinates for each zipcode
+# Function to validate ZIP code and get coordinates
 def get_zip_coords(zip_code):
     try:
-        zip_info = zipcodes.matching(zip_code)
-        if zip_info:
-            return float(zip_info[0]['lat']), float(zip_info[0]['long'])
+        if zip_code.isdigit() and len(zip_code) == 5:  # Check if ZIP code is valid
+            zip_info = zipcodes.matching(zip_code)
+            if zip_info:
+                return float(zip_info[0]['lat']), float(zip_info[0]['long'])
         return None, None
-    except:
+    except Exception as e:
+        print(f"Error fetching coordinates for ZIP {zip_code}: {e}")
         return None, None
 
 # Apply the function to get coordinates
@@ -55,49 +59,53 @@ df[['lat', 'lng']] = df.apply(
     axis=1
 )
 
+# Filter out rows with null coordinates
+df = df.dropna(subset=["lat", "lng"])
+
 # Streamlit UI
 st.title("Customer Purchase Density Map (Last 7 Days)")
 selected_store = st.selectbox("Choose a Store", sorted(df['store'].dropna().unique()))
 color_scale = st.selectbox("Choose a color scale", ["Jet", "Viridis", "Plasma", "Cividis", "Hot"])
 
-filtered_df = df[df['store'] == selected_store].dropna(subset=["lat", "lng"])
+# Filter data for the selected store
+filtered_df = df[df['store'] == selected_store]
 
-# Create the density map figure
-fig = px.density_map(
-    filtered_df,
-    lat="lat",
-    lon="lng",
-    z="total_collected_post_discount_post_tax_post_fees",
-    radius=10,
-    zoom=6,
-    center={"lat": filtered_df["lat"].mean() if not filtered_df.empty else 39.8283, 
-            "lon": filtered_df["lng"].mean() if not filtered_df.empty else -98.5795},  # US center if empty
-    mapbox_style="open-street-map",
-    color_continuous_scale=color_scale.lower(),
-    opacity=0.7,
-    title=f"Customer Purchase Density for {selected_store}",
-)
-
-# Update the layout with dragmode
-fig.update_layout(
-    dragmode="zoom",
-    mapbox=dict(
-        bearing=0,
-        pitch=0
-    )
-)
-
-# Display in Streamlit with config options including scrollZoom
-st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
-
-# Add some statistics
-st.subheader("Purchase Statistics")
+# Check if there is data to plot
 if not filtered_df.empty:
+    # Create the density map figure
+    fig = px.density_map(
+        filtered_df,
+        lat="lat",
+        lon="lng",
+        z="total_collected_post_discount_post_tax_post_fees",
+        radius=10,
+        zoom=6,
+        center={"lat": filtered_df["lat"].mean(), "lon": filtered_df["lng"].mean()},
+        mapbox_style="open-street-map",
+        color_continuous_scale=color_scale.lower(),
+        opacity=0.7,
+        title=f"Customer Purchase Density for {selected_store}",
+    )
+
+    # Update the layout with dragmode
+    fig.update_layout(
+        dragmode="zoom",
+        mapbox=dict(
+            bearing=0,
+            pitch=0
+        )
+    )
+
+    # Display in Streamlit with config options including scrollZoom
+    st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
+
+    # Add some statistics
+    st.subheader("Purchase Statistics")
     total_purchases = len(filtered_df)
     total_revenue = filtered_df["total_collected_post_discount_post_tax_post_fees"].sum()
     avg_purchase = filtered_df["total_collected_post_discount_post_tax_post_fees"].mean()
     mapped_percentage = (len(filtered_df) / len(df[df['store'] == selected_store])) * 100
-    
+
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Total Purchases", f"{total_purchases:,}")
     col2.metric("Total Revenue", f"${total_revenue:,.2f}")
