@@ -1,6 +1,6 @@
+import streamlit as st  # Move this to the top
 import sys
 import subprocess
-
 
 # Try importing with error handling
 try:
@@ -16,7 +16,6 @@ except ImportError as e:
     st.error(f"Failed to import plotly.express: {e}")
 
 # Continue with other imports
-import streamlit as st
 from databricks import sql
 import os
 import numpy as np
